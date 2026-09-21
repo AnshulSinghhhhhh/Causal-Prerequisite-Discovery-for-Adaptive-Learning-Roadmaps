@@ -1,0 +1,13 @@
+{
+  "id": "anshulsingh45/lightgap-cdp-probe-qwen",
+  "title": "LightGAP CDP Probe Qwen",
+  "code_file": "cdp_probe.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}

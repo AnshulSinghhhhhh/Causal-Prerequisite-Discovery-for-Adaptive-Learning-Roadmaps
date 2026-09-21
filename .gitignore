@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# Data artifacts (downloaded / generated — never committed)
+data/external/**
+data/embeddings/**
+data/models/**
+data/vector_index/**
+!data/external/**/.gitkeep
+!data/embeddings/.gitkeep
+!data/models/.gitkeep
+!data/vector_index/.gitkeep
+
+# Hand-labeled gold set is committed (it is the held-out target domain)
+!data/labeled/**
+!data/labeled/gold_pairs.csv
+
+# API keys / secrets
+.env
+.env.*
+*.key
+kaggle*.json
+secrets.yaml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

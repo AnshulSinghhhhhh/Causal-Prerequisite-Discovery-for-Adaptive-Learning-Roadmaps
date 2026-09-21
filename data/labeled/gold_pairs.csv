@@ -1,0 +1,106 @@
+concept_a,concept_b,label
+scalar,vector,1
+vector,matrix,1
+matrix,matrix multiplication,1
+matrix multiplication,matrix inverse,1
+matrix,determinant,1
+vector,linear combination,1
+linear combination,span,1
+span,basis,1
+basis,dimension,1
+linear combination,linear independence,1
+linear independence,basis,1
+matrix,linear transformation,1
+linear transformation,eigenvalue,1
+linear transformation,eigenvector,1
+determinant,eigenvalue,1
+matrix multiplication,systems of linear equations,1
+systems of linear equations,Gaussian elimination,1
+Gaussian elimination,matrix inverse,1
+matrix inverse,linear regression,1
+vector,dot product,1
+dot product,orthogonality,1
+orthogonality,projection,1
+projection,least squares,1
+least squares,linear regression,1
+eigenvector,principal component analysis,1
+eigenvalue,principal component analysis,1
+covariance matrix,principal component analysis,1
+matrix,covariance matrix,1
+vector,norm,1
+norm,gradient descent,1
+dot product,cosine similarity,1
+cosine similarity,k-nearest neighbors,1
+linear regression,logistic regression,1
+probability,Bayes theorem,1
+Bayes theorem,naive Bayes classifier,1
+conditional probability,Bayes theorem,1
+matrix multiplication,neural network forward pass,1
+gradient descent,backpropagation,1
+partial derivative,gradient descent,1
+chain rule,backpropagation,1
+loss function,gradient descent,1
+dot product,kernel function,1
+kernel function,support vector machine,1
+gradient descent,partial derivative,0
+backpropagation,chain rule,0
+eigenvalue,determinant,0
+basis,linear independence,0
+logistic regression,linear regression,0
+naive Bayes classifier,Bayes theorem,0
+support vector machine,kernel function,0
+neural network forward pass,matrix multiplication,0
+k-nearest neighbors,cosine similarity,0
+Gaussian elimination,systems of linear equations,0
+Gaussian elimination,cosine similarity,-1
+orthogonality,naive Bayes classifier,-1
+norm,Bayes theorem,-1
+determinant,k-nearest neighbors,-1
+determinant,backpropagation,-1
+chain rule,cosine similarity,-1
+matrix,rank,1
+rank,singular value decomposition,1
+singular value decomposition,principal component analysis,1
+probability,variance,1
+mean,variance,1
+variance,standard deviation,1
+mean,standardization,1
+standard deviation,standardization,1
+loss function,regularization,1
+regularization,ridge regression,1
+regularization,lasso regression,1
+overfitting,regularization,1
+overfitting,cross-validation,1
+decision tree,random forest,1
+k-means clustering,silhouette score,1
+confusion matrix,ROC curve,1
+sigmoid function,logistic regression,1
+softmax function,neural network forward pass,1
+one-hot encoding,neural network forward pass,1
+activation function,neural network forward pass,1
+feature scaling,gradient descent,1
+rank,matrix,0
+variance,mean,0
+standard deviation,variance,0
+ridge regression,regularization,0
+random forest,decision tree,0
+silhouette score,k-means clustering,0
+ROC curve,confusion matrix,0
+logistic regression,sigmoid function,0
+neural network forward pass,softmax function,0
+gradient descent,feature scaling,0
+rank,naive Bayes classifier,-1
+singular value decomposition,Bayes theorem,-1
+decision tree,orthogonality,-1
+random forest,dot product,-1
+k-means clustering,determinant,-1
+silhouette score,eigenvalue,-1
+confusion matrix,span,-1
+ROC curve,basis,-1
+sigmoid function,Gaussian elimination,-1
+softmax function,linear independence,-1
+one-hot encoding,norm,-1
+activation function,covariance matrix,-1
+feature scaling,determinant,-1
+cross-validation,eigenvector,-1
+overfitting,orthogonality,-1

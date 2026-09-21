@@ -1,0 +1,84 @@
+{
+  "endpoints": [
+    {
+      "endpoint": "/health",
+      "method": "GET",
+      "status_code": 200,
+      "latency_ms": 14.09,
+      "passed": true,
+      "result": "status: ok"
+    },
+    {
+      "endpoint": "/openapi.json",
+      "method": "GET",
+      "status_code": 200,
+      "latency_ms": 40.95,
+      "passed": true,
+      "result": "10 paths defined"
+    },
+    {
+      "endpoint": "/graph/session",
+      "method": "POST",
+      "status_code": 200,
+      "latency_ms": 4.78,
+      "passed": true,
+      "result": "session_id: cfd659f11fe84a8e922c513bd0ed26d9"
+    },
+    {
+      "endpoint": "/graph/{session_id}/build",
+      "method": "POST",
+      "status_code": 200,
+      "latency_ms": 5.12,
+      "passed": true,
+      "result": "DAG assembled & schema verified"
+    },
+    {
+      "endpoint": "/graph/{session_id}",
+      "method": "GET",
+      "status_code": 200,
+      "latency_ms": 4.43,
+      "passed": true,
+      "result": "3 nodes, 2 edges"
+    },
+    {
+      "endpoint": "/quiz/generate",
+      "method": "POST",
+      "status_code": 200,
+      "latency_ms": 4.55,
+      "passed": true,
+      "result": "3 questions generated"
+    },
+    {
+      "endpoint": "/quiz/grade",
+      "method": "POST",
+      "status_code": 200,
+      "latency_ms": 3.98,
+      "passed": true,
+      "result": "graded: is_correct=False"
+    },
+    {
+      "endpoint": "/remediation/inject",
+      "method": "POST",
+      "status_code": 200,
+      "latency_ms": 4.54,
+      "passed": true,
+      "result": "injected: RM_slope_tangent_calculus"
+    },
+    {
+      "endpoint": "/remediation/resolve",
+      "method": "POST",
+      "status_code": 200,
+      "latency_ms": 4.09,
+      "passed": true,
+      "result": "resolved & graph restored"
+    },
+    {
+      "endpoint": "/remediation/decay-check",
+      "method": "POST",
+      "status_code": 200,
+      "latency_ms": 3.6,
+      "passed": true,
+      "result": "decayed: []"
+    }
+  ]
+}

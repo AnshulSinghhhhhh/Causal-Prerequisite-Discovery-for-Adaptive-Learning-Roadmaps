@@ -1,0 +1,8 @@
+transformers>=4.40
+peft>=0.10
+bitsandbytes>=0.43
+torch>=2.0
+supabase>=2.0
+pyarrow>=14.0
+accelerate>=0.30
+datasets>=2.18

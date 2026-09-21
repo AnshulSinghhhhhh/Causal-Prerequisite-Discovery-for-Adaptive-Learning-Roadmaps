@@ -1,0 +1,275 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-12T14:06:02.006419",
+    "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+    "repo": "C:\\Users\\anshu\\Documents\\newstart\\aadfadfadsfadsf\\lightgap"
+  },
+  "modules": {
+    "module1": {
+      "embedding_features": {
+        "passed": true,
+        "num_concepts": 8,
+        "embedding_dim": 384,
+        "directional_feature_dim": 1536,
+        "mean_cosine_similarity": -0.0085,
+        "std_cosine_similarity": 0.0445,
+        "min_cosine": -0.113,
+        "max_cosine": 0.0729
+      },
+      "logistic_regression_baseline": {
+        "passed": true,
+        "train_samples": 67,
+        "test_samples": 23,
+        "feature_dim": 1536,
+        "accuracy": 0.8696,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "roc_auc": 0.4667,
+        "train_time_s": 0.1035,
+        "inference_time_s": 0.000488,
+        "threshold": 0.5
+      },
+      "dirgcn_standard": {
+        "passed": true,
+        "num_nodes": 10,
+        "feature_dim": 64,
+        "hidden_dim": 32,
+        "num_edges_candidate": 90,
+        "eval_pairs": 20,
+        "num_parameters": 9345,
+        "score_mean": 0.4837,
+        "score_std": 0.0107,
+        "score_min": 0.457,
+        "score_max": 0.5013,
+        "inference_time_s": 0.071938,
+        "note": "Untrained weights forward-pass verification"
+      },
+      "dirgcn_attention_weighted": {
+        "passed": true,
+        "num_nodes": 10,
+        "feature_dim": 64,
+        "hidden_dim": 32,
+        "num_parameters": 9541,
+        "extra_params_vs_standard": 196,
+        "score_mean": 0.4912,
+        "score_std": 0.015,
+        "score_min": 0.4672,
+        "score_max": 0.5185,
+        "attention_entropy": 2.9953,
+        "inference_time_s": 0.004349,
+        "note": "Untrained weights forward-pass verification"
+      },
+      "weak_supervision_bootstrap": {
+        "passed": true,
+        "num_concepts": 8,
+        "chapter_noisy_pairs": 7,
+        "link_noisy_pairs": 3,
+        "total_noisy_pairs": 10,
+        "bootstrap_train_time_s": 0.0092,
+        "gold_finetuned": true,
+        "gold_samples": 4
+      },
+      "calibration": {
+        "passed": true,
+        "calibration_samples": 200,
+        "held_out_samples": 60,
+        "selected_threshold": 0.52,
+        "youden_j": 0.7623,
+        "heldout_f1": 0.9825,
+        "heldout_precision": 1.0,
+        "heldout_recall": 0.9655,
+        "ensemble_selected_model": "dirgcn_attn",
+        "ensemble_cv_mean_f1": 0.79,
+        "calibration_time_s": 0.0055,
+        "anti_leakage_guaranteed": true
+      },
+      "groq_slm_counterfactual_probe": {
+        "passed": true,
+        "model": "qwen/qwen3.8-27b",
+        "num_pairs_probed": 3,
+        "ambiguous_band": [
+          0.4,
+          0.7
+        ],
+        "alpha_blend": 0.5,
+        "total_probe_time_s": 103.61,
+        "avg_probe_time_s": 34.54,
+        "pair_results": [
+          {
+            "pair": "algebra->calculus",
+            "stage_score": 0.55,
+            "d_forward": 0.0118,
+            "d_backward": 0.0606,
+            "d_asym": -0.0488,
+            "verdict": "non-prerequisite"
+          },
+          {
+            "pair": "statistics->probability",
+            "stage_score": 0.52,
+            "d_forward": 0.1445,
+            "d_backward": -0.0393,
+            "d_asym": 0.1838,
+            "verdict": "prerequisite"
+          },
+          {
+            "pair": "topology->algebra",
+            "stage_score": 0.48,
+            "d_forward": -0.0061,
+            "d_backward": 0.0417,
+            "d_asym": -0.0477,
+            "verdict": "non-prerequisite"
+          }
+        ],
+        "original_scores": [
+          0.55,
+          0.52,
+          0.48
+        ],
+        "refined_scores": [
+          0.5439,
+          0.5429,
+          0.474
+        ]
+      }
+    },
+    "module2": {
+      "dag_construction": {
+        "passed": true,
+        "input_pairs": 90,
+        "tau_edge": 0.65,
+        "edges_after_threshold": 54,
+        "dropped_threshold": 36,
+        "dropped_cycle": 38,
+        "dropped_transitive": 5,
+        "final_edges": 11,
+        "is_dag": true,
+        "num_nodes": 10,
+        "collateral_audit": {
+          "total": 4,
+          "survived": 1,
+          "lost_to_threshold": 2,
+          "lost_to_cycle_pruning": 0,
+          "subsumed_by_transitive_path": 1
+        },
+        "build_time_s": 0.0036,
+        "transitive_reduction": true
+      },
+      "path_optimizer_ilp": {
+        "passed": true,
+        "nodes": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "budget": 6.0,
+        "solve_time_s": 0.0244,
+        "feasible_no_goal": true,
+        "selected_no_goal": [
+          "A",
+          "B",
+          "C"
+        ],
+        "objective_no_goal": 6.0,
+        "total_time_no_goal": 6.0,
+        "feasible_with_goal_B": true,
+        "selected_with_goal_B": [
+          "A",
+          "B",
+          "C"
+        ],
+        "solver": "scipy.optimize.milp"
+      }
+    },
+    "module3": {
+      "content_aggregator": {
+        "passed": true,
+        "clients": [
+          "youtube",
+          "github",
+          "arxiv"
+        ],
+        "node_id": "calculus",
+        "items_retrieved": 5,
+        "ranked_items": 5,
+        "top_item_title": "Paper on calculus #2",
+        "top_score": 0.075,
+        "aggregation_time_s": 0.0011,
+        "cache_ttl_s": 3600
+      },
+      "quiz_engine": {
+        "passed": true,
+        "concepts_tested": [
+          "calculus",
+          "linear_algebra",
+          "probability"
+        ],
+        "questions_per_concept": 3,
+        "total_questions": 9,
+        "options_per_question": 3,
+        "all_have_3_roles": true,
+        "generation_time_s": 0.0006,
+        "attribution_test": {
+          "misconception_id": "M_dim",
+          "attributed": true,
+          "match_score": -0.6325
+        }
+      }
+    },
+    "module4": {
+      "decay_model_sm2_fsrs": {
+        "passed": true,
+        "retention_curve_1day_stability": {
+          "0h": 1.0,
+          "12h": 0.6065,
+          "24h": 0.3679,
+          "48h": 0.1353,
+          "72h": 0.0498
+        },
+        "decay_threshold_tau": 0.5,
+        "time_until_decay_1day_stability_s": 59887.9,
+        "sm2_stability_days_after_5_reviews": [
+          6.0,
+          10.0,
+          15.0,
+          20.0,
+          25.0
+        ],
+        "fsrs_stability_days_after_5_reviews_with_1_failure": [
+          3.44,
+          1.91,
+          3.29,
+          5.65,
+          9.72
+        ],
+        "decay_model_retention_after_2days": 0.1353,
+        "decay_model_is_decayed": true,
+        "difficulty_prior_acc0.9_days": 2.75,
+        "difficulty_prior_acc0.1_days": 0.75
+      },
+      "graph_rewriter": {
+        "passed": true,
+        "injected_node_id": "RM_derivative_calculus",
+        "rerouted_edges": 2,
+        "target_locked_on_injection": true,
+        "dag_preserved_during_remediation": true,
+        "resolution_criteria_met": true,
+        "restored_edges": 1,
+        "dag_preserved_after_resolution": true,
+        "injection_time_s": 2e-05
+      }
+    },
+    "shared": {
+      "graph_model_and_schema": {
+        "passed": true,
+        "num_nodes": 4,
+        "num_edges": 4,
+        "is_dag": true,
+        "schema_roundtrip_verified": true,
+        "goal_concept": "D",
+        "time_budget_minutes": 60
+      }
+    }
+  }
+}

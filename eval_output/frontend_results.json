@@ -1,0 +1,9 @@
+﻿{
+    "exit_code":  0,
+    "gzip_size_kb":  95.01,
+    "bundle_size_kb":  292.84,
+    "tsc_build":  "passed",
+    "build_time_s":  1.15,
+    "vite_build":  "passed",
+    "modules_transformed":  200
+}

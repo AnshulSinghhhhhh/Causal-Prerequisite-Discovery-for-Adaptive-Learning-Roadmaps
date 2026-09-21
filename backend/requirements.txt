@@ -1,0 +1,38 @@
+# LightGAP backend dependencies (Python >= 3.10)
+
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.6
+
+# Module 1
+torch>=2.0
+sentence-transformers>=2.7
+scikit-learn>=1.4
+
+# Module 2
+networkx>=3.2
+scipy>=1.11
+
+# Module 3 (optional at runtime)
+requests>=2.31          # YouTube/GitHub/arXiv/docs API clients
+
+# S0 — Concept extraction
+spacy>=3.7
+wikipedia-api>=0.6
+groq>=0.4
+
+# S5 — Tree induction (Leiden community detection)
+python-igraph>=0.11
+leidenalg>=0.10
+
+# Database
+supabase>=2.0
+python-dotenv>=1.0
+
+# Numeric / data
+numpy>=1.26
+pandas>=2.0
+pyarrow>=14.0
+
+# Testing
+pytest>=8.0

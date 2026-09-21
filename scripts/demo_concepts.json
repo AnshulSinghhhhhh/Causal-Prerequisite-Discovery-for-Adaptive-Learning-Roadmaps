@@ -1,0 +1,7 @@
+[
+  {"name": "matrix_multiplication", "definition": "Multiply matrices by summing row-column dot products, valid only when inner dimensions agree.", "outcomes": ["Compute a matrix product", "Recognize dimension mismatch"]},
+  {"name": "inverse_matrix", "definition": "The matrix A^{-1} satisfying A A^{-1} = I.", "outcomes": ["Compute a 2x2 inverse", "State existence conditions"]},
+  {"name": "eigenvalues", "definition": "Scalars lambda solving det(A - lambda I) = 0.", "outcomes": ["Find eigenvalues of a 2x2 matrix"]},
+  {"name": "linear_system", "definition": "Solve Ax = b for unknown vector x.", "outcomes": ["Row-reduce to solve a system"]},
+  {"name": "determinant", "definition": "Signed scaling factor of a linear map.", "outcomes": ["Compute a determinant"]}
+]
