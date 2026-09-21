@@ -40,6 +40,18 @@ INVALID_EDGE_WORDS = {
 }
 
 
+FINITE_VERB_TAGS = {'VB', 'VBD', 'VBP', 'VBZ', 'MD'}
+COMMON_CLAUSE_VERBS = {
+    'conduct', 'conducts', 'conducted',
+    'synthesize', 'synthesizes', 'synthesized',
+    'catalyze', 'catalyzes', 'catalyzed',
+    'regulate', 'regulates', 'regulated',
+    'inhibit', 'inhibits', 'inhibited',
+    'produce', 'produces', 'produced',
+    'contain', 'contains', 'contained',
+}
+
+
 def is_wellformed(span) -> bool:
     """Check if a noun-phrase span is well-formed per A2 POS rules and NER."""
     text = span.text
@@ -58,10 +70,28 @@ def is_wellformed(span) -> bool:
     if first.text.lower() in INVALID_EDGE_WORDS:
         return False
     last = span[-1]
-    if last.pos_ in ('CCONJ', 'SCONJ', 'ADP', 'DET', 'VERB', 'AUX', 'PART', 'PUNCT', 'SYM'):
+    if last.pos_ in ('CCONJ', 'SCONJ', 'ADP', 'DET', 'PART', 'PUNCT', 'SYM'):
         return False
     if last.lemma_.lower() in ('a', 'an', 'the', 'as', 'of', 'in', 'at', 'by', 'for', 'with', 'from'):
         return False
+    if last.text.lower() in INVALID_EDGE_WORDS:
+        return False
+
+    # Scan every token for finite verbs and clause verbs (Issue 3 / A2 hardening)
+    for i, token in enumerate(span):
+        # Reject modal and auxiliary verbs anywhere
+        if token.pos_ == 'AUX' or token.tag_ in ('MD',):
+            return False
+        # Reject finite verbs (VB, VBD, VBP, VBZ)
+        if token.tag_ in FINITE_VERB_TAGS:
+            return False
+        # If token is tagged VERB, only allow non-finite participle/gerund modifiers (VBG, VBN)
+        if token.pos_ == 'VERB' and token.tag_ not in ('VBG', 'VBN'):
+            return False
+        # Reject known transitive/clause verbs in middle positions
+        if 0 < i < len(span) - 1 and token.text.lower() in COMMON_CLAUSE_VERBS:
+            return False
+
     return True
 
 
@@ -144,7 +174,7 @@ Rules:
 - Keep definitions concise (one sentence)"""
 
     models_to_try = [model] if model else []
-    for cand in [os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b"), "groq/compound-mini", "groq/compound"]:
+    for cand in ["openai/gpt-oss-120b", "openai/gpt-oss-20b", os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b"), "groq/compound-mini"]:
         if cand not in models_to_try:
             models_to_try.append(cand)
 
@@ -154,10 +184,15 @@ Rules:
                 model=current_model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
-                max_tokens=800,
-                timeout=15.0,
+                max_tokens=2000,
+                timeout=30.0,
             )
-            content = response.choices[0].message.content.strip()
+            msg = response.choices[0].message
+            content = (msg.content or "").strip()
+            if not content and hasattr(msg, "reasoning") and msg.reasoning:
+                content = msg.reasoning.strip()
+            if not content:
+                continue
             
             # Parse JSON from response (handle markdown code blocks)
             if "```" in content:
@@ -171,22 +206,76 @@ Rules:
                 if isinstance(concepts, dict) and "concepts" in concepts:
                     return concepts["concepts"]
             except Exception:
-                # Fallback regex parser for completed concept objects in truncated JSON
-                recovered = []
-                for block in re.finditer(r'\{[^{}]*?"name"\s*:\s*"([^"]+)"[^{}]*?"definition"\s*:\s*"([^"]+)"[^{}]*?\}', content):
-                    recovered.append({
-                        "name": block.group(1).strip(),
-                        "definition": block.group(2).strip(),
-                        "span": block.group(1).strip(),
-                    })
-                if recovered:
-                    return recovered
+                pass
+
+            # Fallback regex parser for completed concept objects in truncated JSON
+            # Handles both key orders ("name" first or "definition" first) and escaped quotes
+            recovered = []
+            p1 = re.compile(r'\{\s*"name"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"\s*,\s*"definition"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', re.DOTALL)
+            p2 = re.compile(r'\{\s*"definition"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"\s*,\s*"name"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', re.DOTALL)
+            for m in p1.finditer(content):
+                name = m.group(1).replace('\\"', '"').strip()
+                defn = m.group(2).replace('\\"', '"').strip()
+                if name:
+                    recovered.append({"name": name, "definition": defn, "span": name})
+            for m in p2.finditer(content):
+                name = m.group(2).replace('\\"', '"').strip()
+                defn = m.group(1).replace('\\"', '"').strip()
+                if name and not any(r["name"].lower() == name.lower() for r in recovered):
+                    recovered.append({"name": name, "definition": defn, "span": name})
+            if recovered:
+                return recovered
         except Exception as e:
             if "429" in str(e) or "rate_limit" in str(e):
                 continue
             print(f"LLM extraction failed for '{doc_title}' with {current_model}: {e}")
 
     return []
+
+
+def _extract_sentence_definition(text: str, term: str, precomputed_sents: Optional[List[str]] = None) -> str:
+    """Extract an informative definition sentence for a concept from document text.
+    
+    Used for terms extracted via spaCy or when LLM extraction does not produce a definition.
+    First checks for definitional patterns (is/are/refers to/deals with/covers),
+    then falls back to the most informative sentence containing the term.
+    """
+    if not text or not term:
+        return ""
+    
+    term_lower = term.lower()
+    sents = precomputed_sents if precomputed_sents is not None else [
+        s.strip() for s in re.split(r'(?<=[.!?])\s+|\n+', text) if len(s.strip()) >= 20
+    ]
+    
+    # Fast candidate sentence filter
+    candidate_sents = [s for s in sents if term_lower in s.lower()]
+    if not candidate_sents:
+        return ""
+    
+    # 1. Definitional pattern on matching sentences
+    pattern = re.compile(
+        r'([^.\n]*\b' + re.escape(term) + r'\b\s+(?:is|are|was|were|refers to|denotes|represents|consists of|deals with|involves|focuses on|covers)\b[^.\n]+(?:\.|\n|$))',
+        re.IGNORECASE
+    )
+    for s in candidate_sents:
+        m = pattern.search(s)
+        if m:
+            defn = re.sub(r'\s+', ' ', m.group(1)).strip()
+            if len(defn) >= 20:
+                return defn if defn.endswith('.') else defn + '.'
+    
+    # 2. Most informative candidate sentence
+    for s in candidate_sents:
+        cleaned = re.sub(r'\s+', ' ', s).strip()
+        if 25 <= len(cleaned) <= 300:
+            return cleaned if cleaned.endswith('.') else cleaned + '.'
+    
+    snippet = re.sub(r'\s+', ' ', candidate_sents[0][:250]).strip()
+    if len(snippet) >= 15:
+        return snippet if snippet.endswith('.') else snippet + '...'
+    
+    return ""
 
 
 def extract_from_documents(
@@ -217,8 +306,31 @@ def extract_from_documents(
         if not text:
             continue
         
+        precomputed_sents = [
+            s.strip() for s in re.split(r'(?<=[.!?])\s+|\n+', text) if len(s.strip()) >= 20
+        ]
+        
         # LLM extraction (primary — gives definitions)
-        llm_concepts = extract_concepts_llm(text, doc_title=title)
+        # For long documents (e.g. course syllabi > 8,000 chars), chunk into windows
+        # so course modules and technical definitions throughout the document are captured.
+        llm_concepts: List[Dict] = []
+        if len(text) <= 8000:
+            llm_concepts = extract_concepts_llm(text, doc_title=title)
+        else:
+            seen_llm_names = set()
+            chunk_size = 6000
+            stride = 6000
+            max_chunks = 3
+            for c_idx, start_pos in enumerate(range(0, min(len(text), chunk_size * max_chunks), stride)):
+                chunk_text = text[start_pos:start_pos + chunk_size]
+                chunk_title = f"{title} (part {c_idx + 1})" if c_idx > 0 else title
+                extracted = extract_concepts_llm(chunk_text, doc_title=chunk_title)
+                for item in (extracted or []):
+                    item_name = item.get("name", "").strip().lower()
+                    if item_name and item_name not in seen_llm_names:
+                        seen_llm_names.add(item_name)
+                        llm_concepts.append(item)
+        doc_concepts: List[Dict] = []
         for c in llm_concepts:
             name = c.get("name", "").strip()
             name = re.sub(r'^(the|a|an)\s+', '', name, flags=re.IGNORECASE).strip()
@@ -240,24 +352,30 @@ def extract_from_documents(
                         continue
                 except Exception:
                     pass
-            all_concepts.append({
+            doc_concepts.append({
                 "name": name,
                 "definition": c.get("definition", "").strip(),
                 "source_doc_id": doc_id,
                 "source_span": c.get("span", ""),
             })
 
-        
         # spaCy extraction (supplementary — catches terms LLM might miss)
         noun_phrases = extract_noun_phrases(text, nlp=nlp)
-        existing_names = {c["name"].lower() for c in all_concepts}
+        existing_names = {c["name"].lower() for c in doc_concepts}
         for phrase in noun_phrases:
             if phrase.lower() not in existing_names:
-                all_concepts.append({
+                doc_concepts.append({
                     "name": phrase,
-                    "definition": "",  # no definition from spaCy
+                    "definition": "",
                     "source_doc_id": doc_id,
                     "source_span": "",
                 })
+        
+        # Fill any missing definitions from document context
+        for c in doc_concepts:
+            if not c.get("definition") or not c["definition"].strip():
+                c["definition"] = _extract_sentence_definition(text, c["name"], precomputed_sents=precomputed_sents)
+        
+        all_concepts.extend(doc_concepts)
     
     return all_concepts

@@ -1,0 +1,245 @@
+{
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "metric": "cosine_similarity",
+  "calibrated_threshold": 0.92,
+  "legacy_threshold": 0.85,
+  "duplicate_pairs_distribution": {
+    "count": 20,
+    "min": 0.2087,
+    "median": 0.6413,
+    "max": 0.9398,
+    "pairs": [
+      {
+        "concept_a": "decision trees",
+        "concept_b": "decision tree",
+        "similarity": 0.9398
+      },
+      {
+        "concept_a": "support vector machines",
+        "concept_b": "support vector machine",
+        "similarity": 0.9395
+      },
+      {
+        "concept_a": "supervised learning",
+        "concept_b": "supervised machine learning",
+        "similarity": 0.9327
+      },
+      {
+        "concept_a": "backpropagation algorithm",
+        "concept_b": "backpropagation",
+        "similarity": 0.9235
+      },
+      {
+        "concept_a": "random forests",
+        "concept_b": "random forest",
+        "similarity": 0.9203
+      },
+      {
+        "concept_a": "artificial neural network",
+        "concept_b": "neural network",
+        "similarity": 0.8844
+      },
+      {
+        "concept_a": "deep neural network",
+        "concept_b": "deep neural net",
+        "similarity": 0.8699
+      },
+      {
+        "concept_a": "photosynthetic reaction center",
+        "concept_b": "photosystem reaction center",
+        "similarity": 0.8489
+      },
+      {
+        "concept_a": "calvin-benson cycle",
+        "concept_b": "calvin cycle",
+        "similarity": 0.8127
+      },
+      {
+        "concept_a": "principal component analysis",
+        "concept_b": "pca",
+        "similarity": 0.6688
+      },
+      {
+        "concept_a": "convolutional neural network",
+        "concept_b": "convnet",
+        "similarity": 0.6138
+      },
+      {
+        "concept_a": "adenosine triphosphate",
+        "concept_b": "atp",
+        "similarity": 0.6041
+      },
+      {
+        "concept_a": "natural language processing",
+        "concept_b": "nlp",
+        "similarity": 0.6022
+      },
+      {
+        "concept_a": "light-independent reactions",
+        "concept_b": "dark reactions",
+        "similarity": 0.5947
+      },
+      {
+        "concept_a": "reinforcement learning agent",
+        "concept_b": "rl agent",
+        "similarity": 0.5787
+      },
+      {
+        "concept_a": "loss function",
+        "concept_b": "cost function",
+        "similarity": 0.5235
+      },
+      {
+        "concept_a": "recurrent neural network",
+        "concept_b": "rnn",
+        "similarity": 0.5025
+      },
+      {
+        "concept_a": "stochastic gradient descent",
+        "concept_b": "sgd",
+        "similarity": 0.4445
+      },
+      {
+        "concept_a": "k-nearest neighbors",
+        "concept_b": "knn",
+        "similarity": 0.4368
+      },
+      {
+        "concept_a": "ribulose 1,5-bisphosphate",
+        "concept_b": "rubp",
+        "similarity": 0.2087
+      }
+    ]
+  },
+  "distinct_pairs_distribution": {
+    "count": 20,
+    "min": 0.2118,
+    "median": 0.5346,
+    "max": 0.9133,
+    "pairs": [
+      {
+        "concept_a": "chlorophyll a",
+        "concept_b": "chlorophyll b",
+        "similarity": 0.9133
+      },
+      {
+        "concept_a": "l1 regularization",
+        "concept_b": "l2 regularization",
+        "similarity": 0.8956
+      },
+      {
+        "concept_a": "underfitting",
+        "concept_b": "overfitting",
+        "similarity": 0.886
+      },
+      {
+        "concept_a": "photosystem i",
+        "concept_b": "photosystem ii",
+        "similarity": 0.8602
+      },
+      {
+        "concept_a": "c3 photosynthesis",
+        "concept_b": "c4 photosynthesis",
+        "similarity": 0.8195
+      },
+      {
+        "concept_a": "gradient descent",
+        "concept_b": "stochastic gradient descent",
+        "similarity": 0.807
+      },
+      {
+        "concept_a": "light reactions",
+        "concept_b": "dark reactions",
+        "similarity": 0.699
+      },
+      {
+        "concept_a": "anoxygenic photosynthesis",
+        "concept_b": "oxygenic photosynthesis",
+        "similarity": 0.6924
+      },
+      {
+        "concept_a": "rubisco",
+        "concept_b": "rubp",
+        "similarity": 0.6604
+      },
+      {
+        "concept_a": "supervised learning",
+        "concept_b": "unsupervised learning",
+        "similarity": 0.5999
+      },
+      {
+        "concept_a": "linear regression",
+        "concept_b": "logistic regression",
+        "similarity": 0.4693
+      },
+      {
+        "concept_a": "chloroplast",
+        "concept_b": "mitochondria",
+        "similarity": 0.3864
+      },
+      {
+        "concept_a": "photosystem",
+        "concept_b": "chlorophyll",
+        "similarity": 0.3795
+      },
+      {
+        "concept_a": "classification",
+        "concept_b": "regression",
+        "similarity": 0.3635
+      },
+      {
+        "concept_a": "bagging",
+        "concept_b": "boosting",
+        "similarity": 0.3382
+      },
+      {
+        "concept_a": "precision",
+        "concept_b": "recall",
+        "similarity": 0.2895
+      },
+      {
+        "concept_a": "bias",
+        "concept_b": "variance",
+        "similarity": 0.2704
+      },
+      {
+        "concept_a": "accuracy",
+        "concept_b": "f1 score",
+        "similarity": 0.2397
+      },
+      {
+        "concept_a": "thylakoid",
+        "concept_b": "stroma",
+        "similarity": 0.2339
+      },
+      {
+        "concept_a": "generator",
+        "concept_b": "discriminator",
+        "similarity": 0.2118
+      }
+    ]
+  },
+  "false_merges_at_legacy_0_85": [
+    {
+      "concept_a": "chlorophyll a",
+      "concept_b": "chlorophyll b",
+      "similarity": 0.9133
+    },
+    {
+      "concept_a": "l1 regularization",
+      "concept_b": "l2 regularization",
+      "similarity": 0.8956
+    },
+    {
+      "concept_a": "underfitting",
+      "concept_b": "overfitting",
+      "similarity": 0.886
+    },
+    {
+      "concept_a": "photosystem i",
+      "concept_b": "photosystem ii",
+      "similarity": 0.8602
+    }
+  ],
+  "false_merges_at_calibrated_0_92": []
+}

@@ -70,6 +70,22 @@ def test_pos_wellformedness():
     span2 = doc2[:]
     assert is_wellformed(span2) is True
 
+    # Legitimate gerund / participle noun phrases (Issue 3)
+    for phrase in ["supervised learning", "reinforcement learning", "deep learning", "gradient descent", "machine learning"]:
+        doc = nlp(phrase)
+        assert is_wellformed(doc[:]) is True, f"Expected {phrase} to be well-formed"
+
+    # Spans with finite verbs or clause verbs (Issue 3 / A2 hardening)
+    for clause_span in [
+        "bacteriochlorophyll conduct photosynthesis",
+        "bacteriochlorophyll conducts photosynthesis",
+        "bacteria conduct photosynthesis",
+        "plants synthesize glucose",
+        "algorithms learn patterns",
+    ]:
+        doc = nlp(clause_span)
+        assert is_wellformed(doc[:]) is False, f"Expected {clause_span} to be rejected by finite verb filter"
+
     # Starting with coordinating conjunction (e.g. "and classification rule")
     doc3 = nlp("and classification rule")
     span3 = doc3[:]

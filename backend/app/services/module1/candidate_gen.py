@@ -271,8 +271,9 @@ def compute_s_llm_plaus(
     
     primary_model = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
     candidate_models = [primary_model]
-    if "compound-mini" not in primary_model:
-        candidate_models.append("groq/compound-mini")
+    for cand in ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "groq/compound-mini"]:
+        if cand not in candidate_models:
+            candidate_models.append(cand)
     
     client = _get_groq_client()
     scores: Dict[Tuple[str, str], float] = {pair: 0.5 for pair in pairs}

@@ -72,14 +72,10 @@ def normalize(name: str) -> str:
         try:
             doc = nlp(name)
             if len(doc) > 0:
-                tokens = list(doc)
-                last = tokens[-1]
+                last = doc[-1]
                 if last.pos_ in ('NOUN', 'PROPN'):
-                    lemmatized_last = last.lemma_.lower()
-                    if len(tokens) > 1:
-                        name = ' '.join(t.text for t in tokens[:-1]) + ' ' + lemmatized_last
-                    else:
-                        name = lemmatized_last
+                    prefix = name[:last.idx]
+                    name = (prefix + last.lemma_.lower()).strip()
                     lemmatized = True
         except Exception:
             pass
@@ -172,7 +168,7 @@ def log_rejected_batch(rows: List[Dict]) -> None:
 
 def deduplicate_concepts(
     raw_concepts: List[Dict],
-    similarity_threshold: float = 0.85,
+    similarity_threshold: float = 0.92,
     domain_id: Optional[str] = None,
 ) -> Tuple[List[Dict], List[Tuple[str, str]]]:
     """Merge near-duplicate concepts using union-find over two tiers.
@@ -250,14 +246,17 @@ def deduplicate_concepts(
         best = _select_canonical_name(cluster_concepts)
         canonical.append(best)
 
-        # Record aliases and log merges
+        # Record aliases and log merges (avoid duplicate alias entries per cluster)
+        seen_cluster_aliases = set()
         for c in cluster_concepts:
-            if c["name"] != best["name"]:
-                aliases.append((best["name"], c["name"]))
+            c_name = c["name"]
+            if c_name != best["name"] and c_name not in seen_cluster_aliases:
+                seen_cluster_aliases.add(c_name)
+                aliases.append((best["name"], c_name))
                 if domain_id:
                     rejected_to_log.append({
                         "domain_id": domain_id,
-                        "raw_phrase": c["name"],
+                        "raw_phrase": c_name,
                         "stage": "merged_duplicate",
                         "reason": f"Merged into '{best['name']}'",
                     })
@@ -292,15 +291,17 @@ def _select_canonical_name(cluster_concepts: List[Dict]) -> Dict:
         name = c["name"]
         # Priority 1: Wikipedia source (source_doc_id present and non-empty)
         wiki_bonus = 1000 if c.get("source_doc_id") else 0
-        # Priority 2: frequency
+        # Priority 2: Has non-empty definition (gives priority to LLM-defined concepts over spaCy phrases)
+        def_bonus = 500 if c.get("definition") else 0
+        # Priority 3: frequency
         freq = name_counts[name]
-        # Priority 3: prefer shorter (negate length)
+        # Priority 4: prefer shorter (negate length)
         length_score = -len(name)
 
-        scored.append((wiki_bonus, freq, length_score, c))
+        scored.append((wiki_bonus, def_bonus, freq, length_score, c))
 
-    scored.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
-    best = scored[0][3].copy()
+    scored.sort(key=lambda x: (x[0], x[1], x[2], x[3]), reverse=True)
+    best = scored[0][4].copy()
 
     # Inherit definition from any cluster member if best lacks one
     if not best.get("definition"):
@@ -366,43 +367,57 @@ def persist_concepts(
     texts = [c["name"] for c in concepts]
     embeddings = model.encode(texts, normalize_embeddings=True)
 
-    # Prepare concept rows
+    # Prepare concept rows (deduplicating by canonical_name)
     concept_rows = []
+    seen_canon_names = set()
     for c, emb in zip(concepts, embeddings):
+        name = c["name"]
+        if name in seen_canon_names:
+            continue
+        seen_canon_names.add(name)
         row = {
             "domain_id": domain_id,
-            "canonical_name": c["name"],
+            "canonical_name": name,
             "definition": c.get("definition", ""),
             "source_doc_id": c.get("source_doc_id") or None,
             "embedding": emb.tolist(),
         }
         concept_rows.append(row)
 
-    # Insert concepts
-    result = table("concepts").upsert(
-        concept_rows,
-        on_conflict="domain_id,canonical_name",
-    ).execute()
-    persisted = result.data
+    # Insert concepts in batches of 500
+    persisted = []
+    for i in range(0, len(concept_rows), 500):
+        batch = concept_rows[i:i + 500]
+        res = table("concepts").upsert(
+            batch,
+            on_conflict="domain_id,canonical_name",
+        ).execute()
+        persisted.extend(res.data or [])
 
     # Build name->id mapping for aliases
     name_to_id = {r["canonical_name"]: r["id"] for r in persisted}
 
-    # Insert aliases
+    # Insert aliases (deduplicating by (concept_id, alias))
     alias_rows = []
+    seen_aliases = set()
     for canon_name, alias_name in aliases:
         concept_id = name_to_id.get(canon_name)
         if concept_id:
-            alias_rows.append({
-                "concept_id": concept_id,
-                "alias": alias_name,
-            })
+            key = (concept_id, alias_name)
+            if key not in seen_aliases:
+                seen_aliases.add(key)
+                alias_rows.append({
+                    "concept_id": concept_id,
+                    "alias": alias_name,
+                })
 
     if alias_rows:
-        table("concept_aliases").upsert(
-            alias_rows,
-            on_conflict="concept_id,alias",
-        ).execute()
+        for i in range(0, len(alias_rows), 500):
+            batch = alias_rows[i:i + 500]
+            table("concept_aliases").upsert(
+                batch,
+                on_conflict="concept_id,alias",
+            ).execute()
 
     # A6: Update merged_into in rejected_concepts now that we have IDs
     for canon_name, alias_name in aliases:
@@ -425,7 +440,7 @@ def canonicalize(
     goal_concept: str,
     domain_id: str,
     max_concepts: int = 100,
-    similarity_threshold: float = 0.85,
+    similarity_threshold: float = 0.92,
 ) -> List[Dict]:
     """Full canonicalization pipeline: dedupe → cap → persist."""
     # Deduplicate with union-find (A3 + A4)

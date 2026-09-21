@@ -152,10 +152,12 @@ def name_clusters(
     model = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
     
     labels: Dict[int, str] = {}
+    assigned_names_lower = set()
     
     for cluster_id, members in clusters.items():
         if isolated_cluster_idx is not None and cluster_id == isolated_cluster_idx:
             labels[cluster_id] = "Foundational & Independent Concepts"
+            assigned_names_lower.add("foundational & independent concepts")
             continue
 
         concept_list = "\n".join(
@@ -163,14 +165,22 @@ def name_clusters(
             for m in members[:15]  # Cap to avoid token limits
         )
         
-        prompt = f"""Given these concepts and their definitions, write a 2-4 word label for this group.
-Just the label, nothing else.
+        already_assigned = [lbl for lbl in labels.values() if lbl != "Foundational & Independent Concepts"]
+        sibling_clause = ""
+        if already_assigned:
+            sibling_clause = (
+                f"\nThe following cluster names have already been assigned to siblings:\n"
+                f"{already_assigned}\n"
+                f"Choose a distinct, descriptive name that does not duplicate any of these.\n"
+            )
 
+        prompt = f"""Given these concepts and their definitions, write a 2-4 word label for this group.
+Just the label, nothing else.{sibling_clause}
 Concepts:
 {concept_list}"""
         
         models_to_try = [model]
-        for cand in ["groq/compound-mini", "groq/compound"]:
+        for cand in ["qwen/qwen3.8-27b", "openai/gpt-oss-20b", "openai/gpt-oss-120b", "groq/compound-mini", "groq/compound"]:
             if cand not in models_to_try:
                 models_to_try.append(cand)
 
@@ -183,16 +193,34 @@ Concepts:
                     temperature=0.3,
                     max_tokens=20,
                 )
-                label = response.choices[0].message.content.strip().strip('"')
-                labels[cluster_id] = label
-                named = True
-                break
+                raw_label = response.choices[0].message.content.strip().strip('"').strip("'").rstrip(".")
+                # Parse label if model returned "**Label:** XYZ" or multiline reasoning
+                if "**Label:**" in raw_label:
+                    m = re.search(r'\*\*Label:\*\*\s*([^\n\r]+)', raw_label)
+                    label = m.group(1).strip() if m else raw_label.split("\n")[0].strip()
+                elif "\n" in raw_label:
+                    label = raw_label.split("\n")[0].strip()
+                else:
+                    label = raw_label
+                label = re.sub(r'^(label|cluster\s*label)[:\s]*', '', label, flags=re.IGNORECASE).strip().strip('*').strip('"').strip("'")
+                
+                if label and label.lower() not in assigned_names_lower:
+                    labels[cluster_id] = label
+                    assigned_names_lower.add(label.lower())
+                    named = True
+                    break
             except Exception as e:
                 if "429" in str(e) or "rate_limit" in str(e):
                     continue
                 break
         if not named:
-            labels[cluster_id] = f"Cluster {cluster_id + 1}"
+            fallback = f"Cluster {cluster_id + 1}"
+            suffix = 1
+            while fallback.lower() in assigned_names_lower:
+                suffix += 1
+                fallback = f"Cluster {cluster_id + 1} ({suffix})"
+            labels[cluster_id] = fallback
+            assigned_names_lower.add(fallback.lower())
     
     return labels
 

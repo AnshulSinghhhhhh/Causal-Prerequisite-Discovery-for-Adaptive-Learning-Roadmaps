@@ -79,7 +79,33 @@ def run(
             table("concepts").update({"cluster_id": None}).eq("domain_id", domain_id).execute()
             snaps = table("graph_snapshots").select("id").eq("domain_id", domain_id).execute().data
             for s in (snaps or []):
-                table("graph_snapshots").delete().eq("id", s["id"]).execute()
+                sid = s["id"]
+                try:
+                    table("tree_paths").delete().eq("snapshot_id", sid).execute()
+                except Exception:
+                    pass
+                try:
+                    table("dag_edges").delete().eq("snapshot_id", sid).execute()
+                except Exception:
+                    pass
+                try:
+                    table("clusters").delete().eq("snapshot_id", sid).execute()
+                except Exception:
+                    pass
+                try:
+                    table("graph_snapshots").delete().eq("id", sid).execute()
+                except Exception:
+                    pass
+
+            from ..db import fetch_all
+            cands = fetch_all(table("candidate_edges").select("id").eq("domain_id", domain_id))
+            cand_ids = [c["id"] for c in (cands or [])]
+            for i in range(0, len(cand_ids), 200):
+                batch = cand_ids[i:i + 200]
+                try:
+                    table("edge_scores").delete().in_("candidate_edge_id", batch).execute()
+                except Exception:
+                    pass
             table("candidate_edges").delete().eq("domain_id", domain_id).execute()
             table("concepts").delete().eq("domain_id", domain_id).execute()
         except Exception as e:
@@ -217,7 +243,8 @@ def run(
             goal_node = c["id"]
             break
     if goal_node is None and concept_data:
-        goal_node = max(concept_data, key=lambda c: c.get("depth", 0))["id"]
+        depths_map = tree_stats.get("depths", {})
+        goal_node = max(concept_data, key=lambda c: depths_map.get(c["id"], c.get("depth") or 0))["id"]
     
     study_path = []
     if goal_node:
