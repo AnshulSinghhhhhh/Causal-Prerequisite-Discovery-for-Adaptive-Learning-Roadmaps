@@ -188,3 +188,76 @@ def test_descendant_value_computation():
     assert val["B"] == 1.0
     assert val["C"] == 1.0
     assert val["D"] == 0.0
+
+
+# ---------------------------------------------------------------------------
+# S0 Structural Filters Regression Tests (Part B.1)
+# ---------------------------------------------------------------------------
+
+def test_numeric_fragment_filter_regression():
+    from backend.app.services.module0.extract import is_numeric_fragment
+
+    # Confirmed noise artifacts from Photosynthesis output
+    assert is_numeric_fragment("0.1% to 8%") is True
+    assert is_numeric_fragment("3–6%") is True
+    assert is_numeric_fragment("3-6%") is True
+
+    # Other numeric and percentage fragments
+    assert is_numeric_fragment("10-20%") is True
+    assert is_numeric_fragment("50%") is True
+    assert is_numeric_fragment("1.5 to 3.0") is True
+    assert is_numeric_fragment("0.1 to 0.8") is True
+    assert is_numeric_fragment("12345") is True
+
+    # Legitimate concepts containing numbers/symbols must NOT be dropped
+    assert is_numeric_fragment("C4 photosynthesis") is False
+    assert is_numeric_fragment("k-nearest neighbors") is False
+    assert is_numeric_fragment("3D convolutional network") is False
+    assert is_numeric_fragment("F1 score") is False
+    assert is_numeric_fragment("supervised learning") is False
+
+
+def test_heading_metatoken_filter_regression():
+    from backend.app.services.module0.extract import is_heading_or_metatoken
+
+    # Confirmed heading/meta-token artifacts from Photosynthesis and Machine Learning outputs
+    assert is_heading_or_metatoken("QUESTIONS") is True
+    assert is_heading_or_metatoken("Introduction") is True
+    assert is_heading_or_metatoken("problems") is True
+    assert is_heading_or_metatoken("difficulty") is True
+    assert is_heading_or_metatoken("study") is True
+    assert is_heading_or_metatoken("types") is True
+    assert is_heading_or_metatoken("some fields") is True
+
+    # Common syllabus / textbook structural headings
+    assert is_heading_or_metatoken("Syllabus") is True
+    assert is_heading_or_metatoken("EXERCISES") is True
+    assert is_heading_or_metatoken("Chapter 1") is True
+    assert is_heading_or_metatoken("Module 3") is True
+    assert is_heading_or_metatoken("Homework") is True
+    assert is_heading_or_metatoken("Grading") is True
+
+    # Legitimate concepts must NOT be dropped
+    assert is_heading_or_metatoken("machine learning") is False
+    assert is_heading_or_metatoken("neural network") is False
+    assert is_heading_or_metatoken("photosynthesis") is False
+    assert is_heading_or_metatoken("gradient descent") is False
+    assert is_heading_or_metatoken("Statistical Learning Theory") is False
+
+
+def test_structural_filters_in_deduplicate_concepts():
+    raw = [
+        {"name": "0.1% to 8%", "definition": "Photosynthetic efficiency."},
+        {"name": "QUESTIONS", "definition": "Review questions."},
+        {"name": "Introduction", "definition": "Course overview."},
+        {"name": "gradient descent", "definition": "Optimization algorithm."},
+        {"name": "Gradient descent", "definition": "First-order iterative optimization."},
+    ]
+    canonical, aliases = deduplicate_concepts(raw, similarity_threshold=0.85)
+
+    names = [c["name"] for c in canonical]
+    assert "0.1% to 8%" not in names
+    assert "QUESTIONS" not in names
+    assert "Introduction" not in names
+    assert len(canonical) == 1
+    assert "gradient descent" in canonical[0]["name"].lower()

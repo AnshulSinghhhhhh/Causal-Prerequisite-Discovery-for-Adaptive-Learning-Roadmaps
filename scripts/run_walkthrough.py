@@ -263,7 +263,7 @@ def run_demo(goal_concept: str, time_budget: int = 300, force_refresh: bool = Tr
 ## S1 — Candidate generation
 
 - Candidate pairs generated: **{len(cands)}**
-- `s_llm_plaus` evaluated **{min(75, len(cands))}** of **{len(cands)}** surviving pairs (top-ranked by heuristic strength); remaining **{max(0, len(cands) - min(75, len(cands)))}** pairs use a neutral 0.5 prior.
+- `s_llm_plaus` evaluated **{min(300, len(cands))}** of **{len(cands)}** surviving pairs (top-ranked by heuristic strength); remaining **{max(0, len(cands) - min(300, len(cands)))}** pairs use a neutral 0.5 prior.
 
 | Signal | Min | Median | Max |
 |---|---|---|---|

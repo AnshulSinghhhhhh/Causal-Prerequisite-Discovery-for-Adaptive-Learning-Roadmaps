@@ -239,21 +239,20 @@ def compute_s_sim(
 def compute_s_llm_plaus(
     pairs: List[Tuple[str, str]],
     concepts: List[Dict],
-    batch_size: int = 15,
-    max_eval_pairs: int = 75,
+    batch_size: int = 20,
+    max_eval_pairs: int = 300,
 ) -> Dict[Tuple[str, str], float]:
     """Compute s_llm_plaus: LLM plausibility score for candidate pairs.
     
     Evaluates prerequisite plausibility (0.0 to 1.0) via batched Groq calls.
-    Chunked into batches (default 15) with a fixed rubric:
+    Chunked into batches (default 20) with a fixed rubric:
       - 1.0: Essential prerequisite
       - 0.7: Strong supporting prerequisite
       - 0.3: Related topic, caveat, or historical aside
       - 0.0: Unrelated or reversed relationship
     
-    To stay strictly within API token quotas, evaluates up to max_eval_pairs
-    (defaults to top 75 candidate pairs ranked by heuristic strength).
-    Pairs beyond the quota receive a neutral 0.5 prior.
+    Evaluates up to max_eval_pairs (defaults to top 300 candidate pairs
+    ranked by heuristic strength). Pairs beyond the quota receive a neutral 0.5 prior.
     Falls back gracefully between configured model and groq/compound-mini on rate limits.
     """
     if not pairs:
@@ -431,10 +430,14 @@ def generate_candidates(
         s_ord_max = max(s_order.get((a_id, b_id), 0.0), s_order.get((b_id, a_id), 0.0))
         s_def_max = max(s_defmention.get((a_id, b_id), 0.0), s_defmention.get((b_id, a_id), 0.0))
         s_cooc_val = s_cooc.get(pair, s_cooc.get((b_id, a_id), 0.0))
-        s_llm_val = max(
-            s_llm_plaus_raw.get((a_id, b_id), 0.5),
-            s_llm_plaus_raw.get((b_id, a_id), 0.5),
-        )
+        if (a_id, b_id) in s_llm_plaus_raw and (b_id, a_id) in s_llm_plaus_raw:
+            s_llm_val = max(s_llm_plaus_raw[(a_id, b_id)], s_llm_plaus_raw[(b_id, a_id)])
+        elif (a_id, b_id) in s_llm_plaus_raw:
+            s_llm_val = s_llm_plaus_raw[(a_id, b_id)]
+        elif (b_id, a_id) in s_llm_plaus_raw:
+            s_llm_val = s_llm_plaus_raw[(b_id, a_id)]
+        else:
+            s_llm_val = 0.5
         
         signal_values = {
             "s_order": s_ord_max,

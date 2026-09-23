@@ -184,6 +184,39 @@ def deduplicate_concepts(
     if not raw_concepts:
         return [], []
 
+    from .extract import is_numeric_fragment, is_heading_or_metatoken
+
+    filtered_raw = []
+    rejected_structural = []
+    for c in raw_concepts:
+        c_name = c.get("name", "").strip()
+        if is_numeric_fragment(c_name):
+            if domain_id:
+                rejected_structural.append({
+                    "domain_id": domain_id,
+                    "raw_phrase": c_name,
+                    "stage": "structural_filter",
+                    "reason": "numeric_fragment",
+                })
+            continue
+        if is_heading_or_metatoken(c_name):
+            if domain_id:
+                rejected_structural.append({
+                    "domain_id": domain_id,
+                    "raw_phrase": c_name,
+                    "stage": "structural_filter",
+                    "reason": "heading_or_metatoken",
+                })
+            continue
+        filtered_raw.append(c)
+
+    if rejected_structural:
+        log_rejected_batch(rejected_structural)
+
+    raw_concepts = filtered_raw
+    if not raw_concepts:
+        return [], []
+
     model = _get_model()
 
     # --- Tier 1: group by normalized form (exact match) ---

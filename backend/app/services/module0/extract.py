@@ -51,13 +51,102 @@ COMMON_CLAUSE_VERBS = {
     'contain', 'contains', 'contained',
 }
 
+NUMERIC_RANGE_REGEX = re.compile(
+    r'^(?:(?:\d+(?:\.\d+)?%?|\.\d+%?)\s*(?:to|–|-|—|\/)\s*(?:\d+(?:\.\d+)?%?|\.\d+%?)|(?:\d+(?:\.\d+)?|\.\d+)\s*%(?:\s*(?:to|–|-|—|\/)\s*(?:\d+(?:\.\d+)?|\.\d+)\s*%)?)$',
+    re.IGNORECASE
+)
+
+META_HEADING_TOKENS = {
+    'questions', 'question', 'exercises', 'exercise', 'problems', 'problem',
+    'homework', 'assignment', 'assignments', 'syllabus', 'curriculum',
+    'prerequisites', 'prerequisite', 'references', 'reference', 'bibliography',
+    'readings', 'reading', 'schedule', 'grading', 'exam', 'exams', 'midterm',
+    'final', 'chapter', 'section', 'part', 'module', 'unit', 'lecture',
+    'lectures', 'lab', 'labs', 'tutorial', 'tutorials', 'course overview',
+    'overview', 'course description', 'description', 'introduction',
+    'conclusion', 'appendix', 'index', 'glossary', 'summary', 'review',
+    'objectives', 'learning objectives', 'table of contents', 'contents',
+    'notes', 'further reading', 'see also', 'external links', 'difficulty',
+    'study', 'types', 'some fields'
+}
+
+
+def is_numeric_fragment(text: str) -> bool:
+    """Check if a candidate string is a numeric range, percentage, or non-conceptual quantity.
+
+    Drops non-conceptual spans like:
+      - '0.1% to 8%'
+      - '3–6%'
+      - '10-20%'
+      - '50%'
+      - '0.5 to 1.0'
+    Preserves legitimate concepts containing numbers or symbols like:
+      - 'k-nearest neighbors'
+      - '3D convolutional network'
+      - 'C4 photosynthesis'
+      - 'F1 score'
+    """
+    if not text:
+        return True
+    s = text.strip()
+    if NUMERIC_RANGE_REGEX.match(s):
+        return True
+
+    # Check if text lacks any alphabetic characters (e.g. pure numbers, dates, punctuation)
+    has_alpha = any(c.isalpha() for c in s)
+    if not has_alpha:
+        return True
+
+    # Strip numbers, percentages, symbols, and punctuation
+    alpha_only = re.sub(r'[\d\.,;:\-\–\—\(\)\[\]"\'\“\”%&/+\\~#$*]+', ' ', s).strip()
+    alpha_words = [w.lower() for w in alpha_only.split() if w]
+
+    # If the only alphabetic words are numerical range connectors or units
+    range_stop_words = {'to', 'and', 'or', 'per', 'percent', 'percentage', 'approx', 'approximately'}
+    if not alpha_words or all(w in range_stop_words for w in alpha_words):
+        return True
+
+    return False
+
+
+def is_heading_or_metatoken(text: str) -> bool:
+    """Check if candidate text is a structural syllabus/textbook/exam heading or meta-token.
+
+    Drops non-conceptual artifacts like:
+      - 'QUESTIONS'
+      - 'Introduction'
+      - 'problems'
+      - 'Syllabus'
+      - 'Chapter 3'
+      - 'EXERCISES'
+    """
+    if not text:
+        return True
+    s = text.strip()
+    s_lower = s.lower()
+    if s_lower in META_HEADING_TOKENS:
+        return True
+
+    # Check structural numbering like "Chapter 1", "Module 4", "Section B"
+    if re.match(r'^(?:chapter|section|part|module|unit|lecture|lab|assignment|question|exercise|problem)\s+(?:\d+|[a-z])$', s_lower):
+        return True
+
+    # Check uppercase heading artifacts
+    if s.isupper() and len(s) >= 3:
+        if s_lower in META_HEADING_TOKENS or any(h in s_lower for h in ['question', 'problem', 'exercise', 'chapter', 'section', 'module', 'lecture', 'syllabus', 'exam']):
+            return True
+
+    return False
+
 
 def is_wellformed(span) -> bool:
-    """Check if a noun-phrase span is well-formed per A2 POS rules and NER."""
-    text = span.text
+    """Check if a noun-phrase span is well-formed per A2 POS rules, structural filters, and NER."""
+    text = span.text.strip()
     if '\n' in text or '\r' in text:
         return False
     if any(ch in text for ch in '[]{}<>=+'):
+        return False
+    if is_numeric_fragment(text) or is_heading_or_metatoken(text):
         return False
     if span.root.pos_ not in ('NOUN', 'PROPN'):
         return False
@@ -114,6 +203,8 @@ def extract_noun_phrases(text: str, nlp=None) -> List[str]:
                 clean = re.sub(r'^[\s\.,;:\-\–\—\(\)\[\]"\'\“\”]+|[\s\.,;:\-\–\—\(\)\[\]"\'\“\”]+$', '', clean).strip()
                 if len(clean) <= 2 or '\n' in clean or any(ch in clean for ch in '[]{}<>=+'):
                     continue
+                if is_numeric_fragment(clean) or is_heading_or_metatoken(clean):
+                    continue
                 phrases.add(clean)
             return sorted(phrases)
         except Exception:
@@ -130,6 +221,8 @@ def extract_noun_phrases(text: str, nlp=None) -> List[str]:
         words = p.lower().split()
 
         if len(words) < 1 or len(p) <= 3 or any(ch in p for ch in '[]{}<>=+'):
+            continue
+        if is_numeric_fragment(p) or is_heading_or_metatoken(p):
             continue
         # Reject if first or last word is a conjunction, preposition, or auxiliary verb
         if words[0] in INVALID_EDGE_WORDS or words[-1] in INVALID_EDGE_WORDS:
@@ -338,6 +431,8 @@ def extract_from_documents(
             name = re.sub(r'\s+', ' ', name).strip()
             if len(name) < 3 or '\n' in name or any(ch in name for ch in '[]{}<>=+'):
                 continue
+            if is_numeric_fragment(name) or is_heading_or_metatoken(name):
+                continue
             words = name.lower().split()
 
             if not words or len(name) < 3:
@@ -363,6 +458,8 @@ def extract_from_documents(
         noun_phrases = extract_noun_phrases(text, nlp=nlp)
         existing_names = {c["name"].lower() for c in doc_concepts}
         for phrase in noun_phrases:
+            if is_numeric_fragment(phrase) or is_heading_or_metatoken(phrase):
+                continue
             if phrase.lower() not in existing_names:
                 doc_concepts.append({
                     "name": phrase,
